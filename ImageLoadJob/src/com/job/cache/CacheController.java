@@ -44,7 +44,8 @@ public abstract class CacheController<K, V extends CacheValue<K>> implements Cac
 
 	@Override
 	public Object opt(K uriKey) {
-		if (checkAllowOptCache()) {
+		if (!checkAllowOptCache()) {
+			return null;
 		}
 		mLock.lock();
 		V value = mCacheMap.get(uriKey);
@@ -120,14 +121,13 @@ public abstract class CacheController<K, V extends CacheValue<K>> implements Cac
 				Collections.sort(l, sComparator);
 			} catch (Exception e) {
 			}
-			do {
-				if (!l.isEmpty()) {
-					V value = l.remove(0);
-					mCachedSize -= value.size();
-					mCacheMap.remove(value.key());
-					value.recyle();
-				}
-			} while (mCachedSize > mMaxCacheSize);
+
+			while (mCachedSize > mMaxCacheSize && !l.isEmpty()) {
+				V value = l.remove(0);
+				mCachedSize -= value.size();
+				mCacheMap.remove(value.key());
+				value.recyle();
+			}
 			l.clear();
 		}
 		return false;
