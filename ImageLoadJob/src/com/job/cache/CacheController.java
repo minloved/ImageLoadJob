@@ -56,12 +56,11 @@ public abstract class CacheController<K, V extends CacheValue<K>> implements Cac
 			mCachedSize -= value.size();
 			mCacheMap.remove(uriKey);
 		}
-		releaseOverTimeOrOverSize();
 		mLock.unlock();
 		return null;
 	}
 
-	private void releaseOverTimeOrOverSize() {
+	public void releaseOverTimeOrOverSize() {
 		try {
 			mLock.lock();
 			recyleOverTime();

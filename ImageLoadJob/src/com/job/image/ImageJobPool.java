@@ -31,6 +31,7 @@ class ImageJobPool extends JobDetail<Integer, Bitmap> {
 
 	private static final CacheBytesDisk sBytesDiskCache = CacheBytesDisk.instance();
 	private static final CacheBytesController sMemoryCache = new CacheBytesController();
+	private static final CacheBitmapController sBitmapCache = CacheBitmapController.singleInstance();
 	private final LinkedList<ImageJob> mTccJobs = new LinkedList<ImageJob>();
 	private final String cachePath;
 
@@ -130,7 +131,7 @@ class ImageJobPool extends JobDetail<Integer, Bitmap> {
 				sBytesDiskCache.put(cachePath, data);
 		}
 		// 如果Bitmap缓存中已经缓存了图片资源,则优先使用图片资源
-		Bitmap bmp = CacheBitmapController.singleInstance().opt(uri);
+		Bitmap bmp = sBitmapCache.opt(uri);
 		if (bmp == null) {
 			// 如果Bitmap缓存中没有缓存图片资源
 			if (data == null) {
@@ -151,7 +152,7 @@ class ImageJobPool extends JobDetail<Integer, Bitmap> {
 			if (data != null) {
 				bmp = ImageUtils.createBitmapByByteArr(data, null);
 				if (bmp != null) {
-					CacheBitmapController.singleInstance().put(uri, bmp);
+					sBitmapCache.put(uri, bmp);
 				}
 			}
 		}

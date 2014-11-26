@@ -7,6 +7,7 @@ import java.util.concurrent.Executors;
 
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
 /**
  * 
@@ -24,10 +25,13 @@ public final class JobScheduler {
 	static final int MESSAGE_UPDATE = 1;
 	// 结束
 	static final int MESSAGE_END = 2;
+
+	private static final String TAG = JobScheduler.class.getCanonicalName();
 	private final HashMap<String, JobDetail> mMap = new HashMap<String, JobDetail>();
 	private static JobHandler sJobHandler = new JobHandler();
 	private final String mGroupKey;
 	private int mThreadCount = 0;
+	private int mMaxThreadCount = DEAFAULT_THREAD_MAX_COUNT;
 
 	private JobScheduler(String group) {
 		mGroupKey = group;
@@ -39,10 +43,23 @@ public final class JobScheduler {
 	}
 
 	private void checkOrNewThread() {
-		if (mThreadCount < DEFAULT_THREAD_COUNT) {
+		if (mThreadCount < mMaxThreadCount) {
 			startNewJob(mGroupKey);
 			mThreadCount++;
 		}
+	}
+
+	private boolean setMaxThreadCount(int maxCount) {
+		if (maxCount > DEAFAULT_THREAD_MAX_COUNT) {
+			Log.i(TAG, "setMaxThreadCount: 不能超过最大值" + DEAFAULT_THREAD_MAX_COUNT);
+			return false;
+		}
+		if (maxCount < 0) {
+			Log.i(TAG, "setMaxThreadCount: 不能为负值");
+			return false;
+		}
+		mMaxThreadCount = maxCount;
+		return true;
 	}
 
 	private static class JobHandler extends Handler {
@@ -79,6 +96,14 @@ public final class JobScheduler {
 	private static HashMap<String, Integer> sThreadMap = new HashMap<String, Integer>();
 	private static final int DEAFAULT_THREAD_MAX_COUNT = 7;
 	private static final int DEFAULT_THREAD_COUNT = 3;
+
+	public static boolean setThreadCount(String group, int count) {
+		JobScheduler tcd = sJobsMap.get(group);
+		if (tcd == null) {
+			return false;
+		}
+		return tcd.setMaxThreadCount(count);
+	}
 
 	public static boolean pull(JobDetail job) {
 		JobScheduler tcd = sJobsMap.get(job.group());

@@ -70,7 +70,6 @@ class ImageUtils {
 	}
 
 	public static boolean initImageCacheDir(String cacheDir) {
-		checkIfInUIThread();
 		File file = new File(cacheDir);
 		if (file.exists() && file.isDirectory()) {
 			return true;

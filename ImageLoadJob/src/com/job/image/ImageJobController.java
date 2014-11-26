@@ -16,7 +16,6 @@ import com.job.syn.JobScheduler;
  * @TODO 控制图片缓存目录.已经将图片下载的工作送给线程执行
  */
 public class ImageJobController {
-	private static String TAG = ImageJobController.class.getCanonicalName();
 	private static String CACHE_DIR;
 	static Context sContext;
 

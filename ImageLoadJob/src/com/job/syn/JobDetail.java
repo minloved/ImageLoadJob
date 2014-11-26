@@ -7,7 +7,7 @@ import com.job.syn.JobScheduler.JobResult;
  * @author Octopus(张宇)
  * @Data 2014年11月26日
  * @Time 下午3:39:08
- * @Tags @param <PRO> 更新
+ * @Tags @param <PRO> 进度条数据
  * @Tags @param <RESULT> 结果
  * @TODO TODO
  */
