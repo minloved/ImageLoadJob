@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
+import android.os.Looper;
+
 public abstract class CacheController<K, V extends CacheValue<K>> implements CacheInterface<K> {
 	private final HashMap<K, V> mCacheMap = new HashMap<K, V>();
 	private final ReentrantLock mLock = new ReentrantLock();
@@ -15,6 +17,7 @@ public abstract class CacheController<K, V extends CacheValue<K>> implements Cac
 	private long mCachedSize = 0;
 	private long mMaxCacheTime = 0;
 	private long mMaxCacheSize = 0;
+	private boolean isRecyling = false;
 
 	public CacheController() {
 		mCachedSize = 0;
@@ -41,6 +44,8 @@ public abstract class CacheController<K, V extends CacheValue<K>> implements Cac
 
 	@Override
 	public Object opt(K uriKey) {
+		if (checkAllowOptCache()) {
+		}
 		mLock.lock();
 		V value = mCacheMap.get(uriKey);
 		if (value != null) {
@@ -60,11 +65,22 @@ public abstract class CacheController<K, V extends CacheValue<K>> implements Cac
 		return null;
 	}
 
+	/**
+	 * 主线程内且正在被回收时,不允许获取缓存,提升主线程的速度
+	 * 
+	 * @return true 是允许,否则不允许
+	 */
+	public final boolean checkAllowOptCache() {
+		return !(Looper.myLooper() == Looper.getMainLooper() && isRecyling);
+	}
+
 	public void releaseOverTimeOrOverSize() {
 		try {
 			mLock.lock();
+			isRecyling = true;
 			recyleOverTime();
 			recyleOverSizeBorder();
+			isRecyling = false;
 			mLock.unlock();
 		} finally {
 			// TODO:
@@ -119,6 +135,8 @@ public abstract class CacheController<K, V extends CacheValue<K>> implements Cac
 
 	public void recyleAllCache() {
 		mLock.lock();
+		isRecyling = true;
+		isRecyling = false;
 		mLock.unlock();
 	}
 
@@ -142,6 +160,10 @@ public abstract class CacheController<K, V extends CacheValue<K>> implements Cac
 		this.mMaxCacheTime = mmt;
 		releaseOverTimeOrOverSize();
 		mLock.unlock();
+	}
+
+	public boolean isRecyling() {
+		return isRecyling;
 	}
 
 	public abstract V createCacheValue(K key, Object value);

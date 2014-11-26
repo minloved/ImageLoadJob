@@ -162,7 +162,7 @@ public class ImageJob {
 		return uri + "*" + idealWidth + "#" + idealHeight + convertor.key();
 	}
 
-	public final boolean removeFromJobPool() {
+	protected final boolean removeFromJobPool() {
 		if (imageJobPool != null) {
 			imageJobPool.removeJob(this);
 			imageJobPool = null;
@@ -171,7 +171,7 @@ public class ImageJob {
 		return false;
 	}
 
-	public final void addToJobPool(ImageJobPool ijpool) {
+	protected final void addToJobPool(ImageJobPool ijpool) {
 		this.imageJobPool = ijpool;
 	}
 
