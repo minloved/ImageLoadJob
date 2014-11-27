@@ -19,8 +19,10 @@ import android.util.Log;
 import com.job.cache.CacheBitmapController;
 import com.job.cache.CacheBytesController;
 import com.job.cache.CacheBytesDisk;
-import com.job.cache.UtilsStream;
 import com.job.syn.JobDetail;
+import com.job.utils.ImageUtils;
+import com.job.utils.JobUtils;
+import com.job.utils.StreamUtils;
 
 class ImageJobPool extends JobDetail<Integer, Bitmap> {
 	private static final String TAG = ImageJobPool.class.getSimpleName();
@@ -39,17 +41,17 @@ class ImageJobPool extends JobDetail<Integer, Bitmap> {
 
 	public ImageJobPool(String uri, String cacheDir) {
 		this.uri = uri;
-		cachePath = cacheDir + ImageUtils.md5Encrypt(uri);
+		cachePath = cacheDir;
 	}
 
 	public void addJob(ImageJob job) {
-		ImageUtils.checkIfInUIThread();
+		JobUtils.checkIfInUIThread();
 		mTccJobs.add(job);
 		job.addToJobPool(this);
 	}
 
 	public void removeJob(ImageJob job) {
-		ImageUtils.checkIfInUIThread();
+		JobUtils.checkIfInUIThread();
 		mTccJobs.remove(job);
 		if (mTccJobs.isEmpty()) {
 			abolish();
@@ -97,8 +99,8 @@ class ImageJobPool extends JobDetail<Integer, Bitmap> {
 				return bos.toByteArray();
 			} catch (Exception e) {
 			} finally {
-				UtilsStream.safeCloseOutputStream(bos);
-				UtilsStream.safeCloseInputStream(inputStream);
+				StreamUtils.safeCloseOutputStream(bos);
+				StreamUtils.safeCloseInputStream(inputStream);
 				entity.consumeContent();
 			}
 		} catch (IOException e) {

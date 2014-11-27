@@ -12,8 +12,15 @@ import android.os.Looper;
 public abstract class CacheController<K, V extends CacheValue<K>> implements CacheInterface<K> {
 	private final HashMap<K, V> mCacheMap = new HashMap<K, V>();
 	private final ReentrantLock mLock = new ReentrantLock();
-	private final static long DEFAULT_MAX_CACHE_TIME = 2 * 60 * 1000;
-	private final static long DEFAULT_MAX_CACHE_SIZE = 10 * 1024 * 1024;
+	public final static long DEFAULT_MAX_CACHE_TIME;
+	public final static long DEFAULT_MAX_CACHE_SIZE;
+	static {
+		// 一分钟
+		DEFAULT_MAX_CACHE_TIME = 1 * 60 * 1000;
+		long M = Runtime.getRuntime().maxMemory() >> 20;
+		M = M > 150 ? 150 : M;
+		DEFAULT_MAX_CACHE_SIZE = M / 6 << 20;
+	}
 	private long mCachedSize = 0;
 	private long mMaxCacheTime = 0;
 	private long mMaxCacheSize = 0;

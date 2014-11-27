@@ -4,7 +4,6 @@ import java.lang.ref.WeakReference;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
@@ -28,6 +27,7 @@ import android.widget.ImageView.ScaleType;
  */
 public class ImageJob {
 	private String uri;
+
 	private WeakReference<View> weakView;
 	private ITccConvertor convertor = ImageJob.NULL;
 	private ITCCDisplayer displayer;
@@ -58,19 +58,19 @@ public class ImageJob {
 	 *            将加载完成的Bitmap 绑定到 该view上 显示
 	 * @return
 	 */
-	public static ImageJob obtainJob(String uri, View view, ITCCDisplayer displayer, int defSrc) {
+	public static ImageJob obtainJob(String uri, View view, ITCCDisplayer displayer, Drawable defSrc) {
 		return obtainJob(uri, view, null, displayer, defSrc, -1);
 	};
 
-	public static ImageJob obtainJob(String uri, View view, View progView, ITCCDisplayer displayer, int defSrc, int defErr) {
+	public static ImageJob obtainJob(String uri, View view, View progView, ITCCDisplayer displayer, Drawable defSrc, int defErr) {
 		return obtainJob(uri, view, null, displayer, defSrc, defErr, 0, 0);
 	};
 
-	public static ImageJob obtainJob(String uri, View view, View progView, ITCCDisplayer displayer, int defSrc, int width, int height) {
+	public static ImageJob obtainJob(String uri, View view, View progView, ITCCDisplayer displayer, Drawable defSrc, int width, int height) {
 		return obtainJob(uri, view, null, displayer, defSrc, -1, width, height);
 	};
 
-	public static ImageJob obtainJob(String uri, View view, View pView, ITCCDisplayer displayer, int defSrc, int defErr, int width, int height) {
+	public static ImageJob obtainJob(String uri, View view, View pView, ITCCDisplayer displayer, Drawable defSrc, int defErr, int width, int height) {
 		if (displayer == null)
 			displayer = DEFAULT;
 		Drawable drawable = displayer.getDrawable(view);
@@ -92,7 +92,7 @@ public class ImageJob {
 			}
 		}
 		ImageJob iJob = ImageJob.obtainJob(uri);
-		ImageDrawable iDrawable = new ImageDrawable(ImageJobController.sContext, defSrc, iJob);
+		ImageDrawable iDrawable = new ImageDrawable(defSrc, iJob);
 		displayer.onDisplayDefault(view, iDrawable);
 		iJob.update(view, pView, displayer, iDrawable, defErr, width, height);
 		iJob.addOnAttachStateChangeListener();
@@ -162,7 +162,7 @@ public class ImageJob {
 		return uri + "*" + idealWidth + "#" + idealHeight + convertor.key();
 	}
 
-	protected final boolean removeFromJobPool() {
+	public final boolean removeFromJobPool() {
 		if (imageJobPool != null) {
 			imageJobPool.removeJob(this);
 			imageJobPool = null;
@@ -171,7 +171,7 @@ public class ImageJob {
 		return false;
 	}
 
-	protected final void addToJobPool(ImageJobPool ijpool) {
+	public final void addToJobPool(ImageJobPool ijpool) {
 		this.imageJobPool = ijpool;
 	}
 
@@ -237,6 +237,10 @@ public class ImageJob {
 		return null;
 	}
 
+	public String getUri() {
+		return uri;
+	}
+
 	public void release() {
 		imageJobPool = null;
 		progView = null;
@@ -249,7 +253,7 @@ public class ImageJob {
 	/**
 	 * 空转换
 	 */
-	static final ITccConvertor NULL = new ITccConvertor() {
+	public static final ITccConvertor NULL = new ITccConvertor() {
 
 		@Override
 		public Bitmap onConvert(Bitmap src) {
@@ -274,7 +278,7 @@ public class ImageJob {
 		}
 
 		@Override
-		public void onDisplayDefault(View src, ImageDrawable imageDrawable) {
+		public void onDisplayDefault(View src, Drawable imageDrawable) {
 			if (src instanceof ImageView && imageDrawable != null) {
 				((ImageView) src).setScaleType(ScaleType.CENTER_INSIDE);
 				((ImageView) src).setImageDrawable(imageDrawable);
@@ -327,7 +331,7 @@ public class ImageJob {
 
 	public static interface ITCCDisplayer {
 
-		public void onDisplayDefault(View src, ImageDrawable drawable);
+		public void onDisplayDefault(View src, Drawable drawable);
 
 		public void onDisplayError(View src, int errID);
 
@@ -345,12 +349,12 @@ public class ImageJob {
 
 	}
 
-	private static class ImageDrawable extends Drawable {
-		WeakReference<ImageJob> imageJob;
+	private static final class ImageDrawable extends Drawable {
+		private WeakReference<ImageJob> imageJob;
 		private Drawable drawable;
 
-		public ImageDrawable(Context context, int drawableRes, ImageJob job) {
-			drawable = context.getResources().getDrawable(drawableRes);
+		private ImageDrawable(Drawable defDrawable, ImageJob job) {
+			drawable = defDrawable;
 			if (job != null) {
 				this.imageJob = new WeakReference<ImageJob>(job);
 			} else {

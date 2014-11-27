@@ -1,6 +1,7 @@
 package com.job.cache;
 
 import com.job.cache.CacheBytesController.BytesValue;
+import com.job.utils.JobUtils;
 
 /**
  * 
@@ -14,8 +15,8 @@ public class CacheBytesController extends CacheController<String, BytesValue> {
 
 	public CacheBytesController() {
 		super();
-		setMaxCacheTime(4 * 60 * 100);
-		setMaxMemorySize(8 * 1024 * 1024);
+		setMaxCacheTime(DEFAULT_MAX_CACHE_TIME << 2);
+		setMaxMemorySize(DEFAULT_MAX_CACHE_SIZE >> 1);
 	}
 
 	@Override
@@ -46,7 +47,7 @@ public class CacheBytesController extends CacheController<String, BytesValue> {
 		@Override
 		public byte[] cloneValue() {
 			updateCacheTime();
-			return UtilsCache.cloneDataFragment(value());
+			return JobUtils.clone(value());
 		}
 	}
 

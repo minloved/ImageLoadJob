@@ -8,6 +8,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import com.job.utils.JobUtils;
+import com.job.utils.StreamUtils;
+
 /**
  * 
  * @author Octopus(将图片保存到sdcard缓存)
@@ -31,7 +34,7 @@ public class CacheBytesDisk implements CacheInterface<String> {
 	 */
 	@Override
 	public boolean put(String path, Object cache) {
-		if (!UtilsCache.removeFileIfExsit(path) && !(cache instanceof byte[])) {
+		if (!JobUtils.removeFileIfExsit(path) && !(cache instanceof byte[])) {
 			return false;
 		}
 		byte[] byteArr = (byte[]) cache;
@@ -39,21 +42,21 @@ public class CacheBytesDisk implements CacheInterface<String> {
 		try {
 			File file = new File(path);
 			oStream = new FileOutputStream(file);
-			UtilsStream.writeByteArr(oStream, byteArr);
+			StreamUtils.writeBytesArrWithoutCheckByte(oStream, byteArr);
 			file.setLastModified(System.currentTimeMillis());
 			return true;
 		} catch (FileNotFoundException e) {
 		} catch (IOException e) {
-			UtilsCache.removeFileIfExsit(path);
+			JobUtils.removeFileIfExsit(path);
 		} finally {
-			UtilsStream.safeCloseOutputStream(oStream);
+			StreamUtils.safeCloseOutputStream(oStream);
 		}
 		return false;
 	}
 
 	@Override
 	public byte[] opt(String path) {
-		if (null == UtilsCache.exsit(path)) {
+		if (null == JobUtils.exsit(path)) {
 			return null;
 		}
 		InputStream inStream = null;
@@ -61,12 +64,12 @@ public class CacheBytesDisk implements CacheInterface<String> {
 			File file = new File(path);
 			inStream = new FileInputStream(file);
 			file.setLastModified(System.currentTimeMillis());
-			return UtilsStream.readByteArr(inStream);
+			return StreamUtils.readBytesArrWithoutCheckByte(inStream);
 		} catch (FileNotFoundException e) {
 		} catch (IOException e) {
-			UtilsCache.removeFileIfExsit(path);
+			JobUtils.removeFileIfExsit(path);
 		} finally {
-			UtilsStream.safeCloseInputStream(inStream);
+			StreamUtils.safeCloseInputStream(inStream);
 		}
 		return null;
 	}

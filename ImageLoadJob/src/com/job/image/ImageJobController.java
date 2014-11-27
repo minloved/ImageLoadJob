@@ -1,11 +1,11 @@
 package com.job.image;
 
-import android.content.Context;
 import android.graphics.Bitmap;
 
 import com.job.cache.CacheBitmapController;
 import com.job.syn.JobDetail;
 import com.job.syn.JobScheduler;
+import com.job.utils.JobUtils;
 
 /**
  * 
@@ -16,19 +16,9 @@ import com.job.syn.JobScheduler;
  * @TODO 控制图片缓存目录.已经将图片下载的工作送给线程执行
  */
 public class ImageJobController {
-	private static String CACHE_DIR;
-	static Context sContext;
-
-	public static void init(Context context) {
-		sContext = context;
-	};
-
-	public static boolean initImageCacheDir(String cacheDir) {
-		CACHE_DIR = cacheDir;
-		return ImageUtils.initImageCacheDir(CACHE_DIR);
-	}
 
 	/**
+	 * 将tcm的下载文件保存为absolutePat
 	 * 
 	 * @param view
 	 *            将加载完成的Bitmap 绑定到 该view上 显示
@@ -36,10 +26,10 @@ public class ImageJobController {
 	 */
 
 	@SuppressWarnings("rawtypes")
-	public static void load(String uri, ImageJob tcm) {
-		ImageUtils.checkIfInUIThread();
-		ImageUtils.initImageCacheDir(CACHE_DIR);
+	public static void load(String absolutePath, ImageJob tcm) {
+		JobUtils.checkIfInUIThread();
 		if (tcm != null) {
+			String uri = tcm.getUri();
 			Bitmap bmp = CacheBitmapController.singleInstance().opt(uri);
 			if (tcm.getView() != null && bmp != null) {
 				tcm.display(bmp);
@@ -55,7 +45,7 @@ public class ImageJobController {
 					}
 				}
 			}
-			ImageJobPool container = new ImageJobPool(uri, CACHE_DIR);
+			ImageJobPool container = new ImageJobPool(uri, absolutePath);
 			container.addJob(tcm);
 			JobScheduler.push(container);
 		}

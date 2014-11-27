@@ -3,6 +3,7 @@ package com.job.cache;
 import android.graphics.Bitmap;
 
 import com.job.cache.CacheBitmapController.BitmapValue;
+import com.job.utils.ImageUtils;
 
 /**
  * 
@@ -20,10 +21,11 @@ public final class CacheBitmapController extends CacheController<String, BitmapV
 		return sInstance;
 	}
 
+	// 设为最大内存的1/3
 	private CacheBitmapController() {
 		super();
-		setMaxCacheTime(1 * 60 * 100);
-		setMaxMemorySize(32 * 1024 * 1024);
+		setMaxCacheTime(DEFAULT_MAX_CACHE_TIME << 1);
+		setMaxMemorySize(DEFAULT_MAX_CACHE_SIZE * 6 / 5);
 	}
 
 	@Override
@@ -34,7 +36,7 @@ public final class CacheBitmapController extends CacheController<String, BitmapV
 	public static class BitmapValue extends CacheValue<String> {
 
 		public BitmapValue(String key, Bitmap value) {
-			super(key, value, UtilsCache.computeBitmapSize(value));
+			super(key, value, ImageUtils.computeBitmapSize(value));
 		}
 
 	}
