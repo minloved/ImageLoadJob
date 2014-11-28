@@ -1,6 +1,6 @@
 package com.job.cache;
 
-public interface CacheInterface<K> {
+interface CacheInterface<K> {
 	/**
 	 * 
 	 * @param uriKey

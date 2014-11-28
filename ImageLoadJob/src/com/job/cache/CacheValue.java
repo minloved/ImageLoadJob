@@ -10,7 +10,7 @@ import com.job.cache.CacheOverTime.CacheOverTimeInterface;
  * @Tags
  * @TODO TODO 缓存的数据到对象的映射
  */
-public abstract class CacheValue<KEY> implements CacheOverTimeInterface {
+abstract class CacheValue<KEY> implements CacheOverTimeInterface {
 	private final CacheOverTime overTime = new CacheOverTime();
 	private Object value;
 	private final KEY key;

@@ -9,7 +9,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import android.os.Looper;
 
-public abstract class CacheController<K, V extends CacheValue<K>> implements CacheInterface<K> {
+abstract class CacheController<K, V extends CacheValue<K>> implements CacheInterface<K> {
 	private final HashMap<K, V> mCacheMap = new HashMap<K, V>();
 	private final ReentrantLock mLock = new ReentrantLock();
 	public final static long DEFAULT_MAX_CACHE_TIME;

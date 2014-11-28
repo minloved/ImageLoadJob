@@ -1,6 +1,6 @@
 package com.job.cache;
 
-public class CacheOverTime {
+class CacheOverTime {
 
 	private long mLastUseCacheTime;
 

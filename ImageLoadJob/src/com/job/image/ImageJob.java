@@ -12,6 +12,7 @@ import android.graphics.Rect;
 import android.graphics.Region;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.View.OnAttachStateChangeListener;
 import android.widget.ImageView;
@@ -199,11 +200,14 @@ public class ImageJob {
 		return deal;
 	}
 
-	public final void fileLoadSuccess(boolean success, String path) {
+	public final void fileLoadSuccess(boolean success, String filePath) {
 		if (displayer != null) {
-			if (!success)
-				path = null;
-			displayer.onLoadToFile(path);
+			View view = progView != null ? progView.get() : null;
+			if (TextUtils.isEmpty(filePath)) {
+				displayer.onFailed(view);
+			} else {
+				displayer.onSuccessed(view, filePath);
+			}
 		}
 	}
 
@@ -308,8 +312,13 @@ public class ImageJob {
 		}
 
 		@Override
-		public void onLoadToFile(String path) {
+		public void onSuccessed(View proView, String filePath) {
 		}
+
+		@Override
+		public void onFailed(View proView) {
+		}
+
 	};
 
 	public static interface ITccConvertor {
@@ -341,11 +350,9 @@ public class ImageJob {
 
 		public Drawable getDrawable(View src);
 
-		/**
-		 * @param path
-		 *            null 为下载文件失败,保存下载文件的绝对目录
-		 */
-		public void onLoadToFile(String path);
+		public void onSuccessed(View proView, String filePath);
+
+		public void onFailed(View proView);
 
 	}
 
