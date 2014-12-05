@@ -2,7 +2,6 @@ package com.job.image;
 
 import java.lang.ref.WeakReference;
 
-import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -100,26 +99,23 @@ public class ImageJob {
 		return iJob;
 	};
 
-	@SuppressLint("NewApi")
-	private final OnAttachStateChangeListener mAttachStateChangeListener = new OnAttachStateChangeListener() {
-		@Override
-		public void onViewDetachedFromWindow(View v) {
-			v.removeOnAttachStateChangeListener(this);
-			removeFromJobPool();
-		}
-
-		@Override
-		public void onViewAttachedToWindow(View v) {
-			v.removeOnAttachStateChangeListener(this);
-		}
-	};
-
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
 	private void addOnAttachStateChangeListener() {
 		if (weakView != null) {
 			View view = weakView.get();
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
-				view.addOnAttachStateChangeListener(mAttachStateChangeListener);
+				view.addOnAttachStateChangeListener(new OnAttachStateChangeListener() {
+					@Override
+					public void onViewDetachedFromWindow(View v) {
+						v.removeOnAttachStateChangeListener(this);
+						removeFromJobPool();
+					}
+
+					@Override
+					public void onViewAttachedToWindow(View v) {
+						v.removeOnAttachStateChangeListener(this);
+					}
+				});
 			}
 		}
 	}
@@ -189,9 +185,6 @@ public class ImageJob {
 						if (defErr > 0) {
 							displayer.onDisplayError(tv, defErr);
 						}
-					}
-					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
-						tv.removeOnAttachStateChangeListener(mAttachStateChangeListener);
 					}
 				}
 				deal = true;
