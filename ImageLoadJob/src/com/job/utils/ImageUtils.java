@@ -1,5 +1,7 @@
 package com.job.utils;
 
+import java.io.IOException;
+
 import android.annotation.TargetApi;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
@@ -60,8 +62,12 @@ public class ImageUtils {
 	 * @return
 	 */
 	public static Bitmap createFromCacheFileByPath(String path) {
-		byte[] data = CacheBytesDisk.instance().opt(path);
-		return createBitmapByByteArr(data, null);
+		try {
+			byte[] data = CacheBytesDisk.instance().readCacheFromFile(path);
+			createBitmapByByteArr(data, null);
+		} catch (IOException e) {
+		}
+		return null;
 	}
 
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)

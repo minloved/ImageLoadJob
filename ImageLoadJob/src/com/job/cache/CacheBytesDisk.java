@@ -59,19 +59,24 @@ public class CacheBytesDisk implements CacheInterface<String> {
 		if (null == JobUtils.exsit(path)) {
 			return null;
 		}
+		try {
+			return readCacheFromFile(path);
+		} catch (IOException e) {
+			JobUtils.removeFileIfExsit(path);
+		}
+		return null;
+	}
+
+	public byte[] readCacheFromFile(String path) throws IOException {
 		InputStream inStream = null;
 		try {
 			File file = new File(path);
 			inStream = new FileInputStream(file);
 			file.setLastModified(System.currentTimeMillis());
 			return StreamUtils.readBytesArrWithoutCheckByte(inStream);
-		} catch (FileNotFoundException e) {
-		} catch (IOException e) {
-			JobUtils.removeFileIfExsit(path);
 		} finally {
 			StreamUtils.safeCloseInputStream(inStream);
 		}
-		return null;
 	}
 
 }
