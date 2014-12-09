@@ -64,7 +64,7 @@ public class ImageUtils {
 	public static Bitmap createFromCacheFileByPath(String path) {
 		try {
 			byte[] data = CacheBytesDisk.instance().readCacheFromFile(path);
-			createBitmapByByteArr(data, null);
+			return createBitmapByByteArr(data, null);
 		} catch (IOException e) {
 		}
 		return null;
