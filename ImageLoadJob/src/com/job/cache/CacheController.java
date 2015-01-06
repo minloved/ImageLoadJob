@@ -30,6 +30,7 @@ abstract class CacheController<K, V extends CacheValue<K>> implements CacheInter
 			value.updateCacheTime();
 			value.setRemoved(canRemoved);
 			mLinkedList.remove(value);
+			mLinkedList.addFirst(value);
 			mLock.unlock();
 			return true;
 		}
@@ -53,6 +54,8 @@ abstract class CacheController<K, V extends CacheValue<K>> implements CacheInter
 			if (value.value() != null) {
 				value.updateCacheTime();
 				Object data = value.cloneValue();
+				mLinkedList.remove(value);
+				mLinkedList.addFirst(value);
 				mLock.unlock();
 				if (data != null) return data;
 				return value.value();
