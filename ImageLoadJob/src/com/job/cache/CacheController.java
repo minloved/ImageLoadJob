@@ -34,9 +34,10 @@ abstract class CacheController<K, V extends CacheValue<K>> implements CacheInter
 			mLock.unlock();
 			return true;
 		}
-		V cv = createCacheValue(key, obj);
-		mCachedSize += cv.size();
-		mCacheMap.put(key, cv);
+		value = createCacheValue(key, obj);
+		mCachedSize += value.size();
+		mCacheMap.put(key, value);
+		mLinkedList.addFirst(value);
 		mLock.unlock();
 		return false;
 	}
