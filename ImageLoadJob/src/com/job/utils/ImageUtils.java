@@ -10,7 +10,7 @@ import android.graphics.BitmapFactory.Options;
 import android.os.Build;
 import android.util.Log;
 
-import com.job.cache.CacheBytesDisk;
+import com.job.cache.CacheDisk;
 
 /**
  * 
@@ -63,7 +63,7 @@ public class ImageUtils {
 	 */
 	public static Bitmap createFromCacheFileByPath(String path) {
 		try {
-			byte[] data = CacheBytesDisk.instance().readCacheFromFile(path);
+			byte[] data = CacheDisk.instance().readCacheFromFile(path);
 			return createBitmapByByteArr(data, null);
 		} catch (IOException e) {
 		}

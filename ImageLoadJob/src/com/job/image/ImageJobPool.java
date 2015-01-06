@@ -1,43 +1,30 @@
 package com.job.image;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.LinkedList;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.params.HttpConnectionParams;
-import org.apache.http.params.HttpParams;
-
 import android.graphics.Bitmap;
-import android.net.http.AndroidHttpClient;
 import android.util.Log;
 
 import com.job.cache.CacheBitmapController;
 import com.job.cache.CacheBytesController;
-import com.job.cache.CacheBytesDisk;
+import com.job.cache.CacheDisk;
+import com.job.image.ImageConfig.TargetConfig;
+import com.job.image.RemoteResourceToByteArray.OnRemoteProgressListener;
 import com.job.syn.JobDetail;
 import com.job.utils.ImageUtils;
 import com.job.utils.JobUtils;
-import com.job.utils.StreamUtils;
 
 class ImageJobPool extends JobDetail<Integer, Bitmap> {
+	private static final Object sSynLock = new Object();
 	private static final String TAG = ImageJobPool.class.getSimpleName();
-	public static final String JOB_GROUP = "image_load_job";
-	private static final int BUFFER_LENGTH = 1024 * 4;
-	public static final int LOAD_MAX_PROGRESS = 100;
-	public static final long LOAD_INTERVAL_TIME = 20;
+	public static final String JOB_GROUP = "IMAGE_LOAD_JOB";
 
-	private static final CacheBytesDisk sBytesDiskCache = CacheBytesDisk.instance();
 	private static final CacheBytesController sMemoryCache = new CacheBytesController();
-	private static final CacheBitmapController sBitmapCache = CacheBitmapController.singleInstance();
 	private final LinkedList<ImageJob> mTccJobs = new LinkedList<ImageJob>();
 	private final String cachePath;
 
-	String uri;
+	private String uri;
 
 	public ImageJobPool(String uri, String cacheDir) {
 		this.uri = uri;
@@ -53,9 +40,7 @@ class ImageJobPool extends JobDetail<Integer, Bitmap> {
 	public void removeJob(ImageJob job) {
 		JobUtils.checkIfInUIThread();
 		mTccJobs.remove(job);
-		if (mTccJobs.isEmpty()) {
-			abolish();
-		}
+		if (mTccJobs.isEmpty()) abolish();
 	}
 
 	public void release() {
@@ -66,113 +51,69 @@ class ImageJobPool extends JobDetail<Integer, Bitmap> {
 		uri = null;
 	}
 
-	private byte[] loadFromWebServices() {
-		final AndroidHttpClient client = AndroidHttpClient.newInstance("SLAPI");
-		HttpParams httpParams = client.getParams();
-		HttpConnectionParams.setConnectionTimeout(httpParams, 20 * 1000);
-		HttpConnectionParams.setSoTimeout(httpParams, 30 * 1000);
-		final HttpGet getRequest = new HttpGet(uri);
-		try {
-			HttpResponse response = client.execute(getRequest);
-			final HttpEntity entity = response.getEntity();
-			long length = entity.getContentLength();
-			length = Math.max(1, length);
-			InputStream inputStream = null;
-			inputStream = entity.getContent();
-			ByteArrayOutputStream bos = null;
-			try {
-				bos = new ByteArrayOutputStream();
-				byte[] buf = new byte[BUFFER_LENGTH];
-				int ch = -1;
-				int count = 0;
-				long time = System.currentTimeMillis();
-				while ((ch = inputStream.read(buf)) != -1) {
-					bos.write(buf, 0, ch);
-					count += ch;
-					long now = System.currentTimeMillis();
-					if ((now - time) < LOAD_INTERVAL_TIME)
-						continue;
-					time = now;
-					int progress = (int) ((count / (float) length) * LOAD_MAX_PROGRESS);
-					update(progress);
-				}
-				return bos.toByteArray();
-			} catch (Exception e) {
-			} finally {
-				StreamUtils.safeCloseOutputStream(bos);
-				StreamUtils.safeCloseInputStream(inputStream);
-				entity.consumeContent();
-			}
-		} catch (IOException e) {
-			if (getRequest != null && !getRequest.isAborted())
-				getRequest.abort();
-		} catch (IllegalStateException e) {
-			if (getRequest != null && !getRequest.isAborted())
-				getRequest.abort();
-			Log.w(TAG, "Incorrect URL: " + uri);
-		} catch (Exception e) {
-			if (getRequest != null && !getRequest.isAborted())
-				getRequest.abort();
-			Log.w(TAG, "Error while retrieving bitmap from " + uri, e);
-		} finally {
-			client.close();
-		}
-		return null;
-	}
-
 	@Override
 	public Bitmap work() {
 		byte[] data = null;
 		File file = new File(cachePath);
 		// 确保缓存文件存在
+		boolean saved = true;
 		if (!file.exists() || !file.isFile()) {
 			// 如果资源没有下载,则主动将数据缓存到Sdcard内
 			Log.w(TAG, "loadFromWebServices");
-			data = loadFromWebServices();
-			if (data != null)
-				sBytesDiskCache.put(cachePath, data);
+			data = RemoteResourceToByteArray.loadFromRemote(uri, new OnRemoteProgressListener() {
+				@Override
+				public void onProgress(int progress) {
+					update(progress);
+				}
+			});
+			if (data != null) saved = CacheDisk.instance().put(cachePath, data) && file.exists();
 		}
-		// 如果Bitmap缓存中已经缓存了图片资源,则优先使用图片资源
-		Bitmap bmp = sBitmapCache.opt(uri);
-		if (bmp == null) {
-			// 如果Bitmap缓存中没有缓存图片资源
+		save(saved);
+		// 如果文件不存在.而且从网络上读取失败的时候,查看是否有缓存
+		if (data == null) {
+			Log.i(TAG, "loadFromMemoryCache");
+			// 如果Bitmap缓存没有缓存该图片资源,则到字节缓存中去获取缓存的字节
+			data = sMemoryCache.opt(uri);
 			if (data == null) {
-				Log.i(TAG, "loadFromMemoryCache");
-				// 如果Bitmap缓存没有缓存该图片资源,则到字节缓存中去获取缓存的字节
-				data = sMemoryCache.opt(uri);
-				if (data == null) {
-					// 如果字节缓存内也没有获取到数据,就去Sdcard去获取
-					Log.i(TAG, "loadFromDiskCache");
-					data = sBytesDiskCache.opt(cachePath);
-					// 如果从Sdcard内读取缓存成功则缓存到字节缓存内
-					if (data != null)
-						sMemoryCache.put(uri, data);
-				}
-			} else {
-				sMemoryCache.put(uri, data);
+				// 如果字节缓存内也没有获取到数据,就去Sdcard去获取
+				Log.i(TAG, "loadFromDiskCache");
+				data = CacheDisk.instance().opt(cachePath);
+				// 如果从Sdcard内读取缓存成功则缓存到字节缓存内
+				if (data != null) sMemoryCache.put(uri, data);
 			}
-			if (data != null) {
-				bmp = ImageUtils.createBitmapByByteArr(data, null);
-				if (bmp != null) {
-					sBitmapCache.put(uri, bmp);
-				}
-			}
+		} else {
+			sMemoryCache.put(uri, data);
 		}
-		return bmp;
+		if (data == null) return null;
+		synchronized (sSynLock) {
+			return ImageUtils.createBitmapByByteArr(data, null);
+		}
+	}
+
+	public void onTranslateToSdcard(boolean success) {
+		for (ImageJob job : mTccJobs) {
+			job.onTranslateToSdcard(success);
+		}
 	}
 
 	@Override
 	public void onResult(Bitmap result) {
 		boolean used = false;
-		File file = new File(cachePath);
-		boolean loadToFileSuccess = false;
-		if (file.exists() && file.isFile()) {
-			loadToFileSuccess = true;
-		}
+		boolean needCache = false;
 		for (ImageJob job : mTccJobs) {
-			boolean u = job.display(result);
-			job.fileLoadSuccess(loadToFileSuccess, cachePath);
-			used = u ? true : used;
+			boolean use = job.display(result);
+			if (!used) used = use;
+			ImageConfig config = job.getImageConfig();
+			if (config == null) continue;
+			if (!needCache) needCache = config.mTargetConfig == TargetConfig.BUILD_BITMAP_AND_CACHE;
+		}
+		if (!used) {
+			if (result != null) {
+				result.recycle();
+				result = null;
+			}
+		} else if (needCache) {
+			CacheBitmapController.singleInstance().put(uri, result);
 		}
 		release();
 	}
@@ -191,6 +132,10 @@ class ImageJobPool extends JobDetail<Integer, Bitmap> {
 
 	@Override
 	public String key() {
+		return uri;
+	}
+
+	public String getUrl() {
 		return uri;
 	}
 }

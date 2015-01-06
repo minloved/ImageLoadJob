@@ -15,6 +15,7 @@ abstract class CacheValue<KEY> implements CacheOverTimeInterface {
 	private Object value;
 	private final KEY key;
 	private long size = 0;
+	private boolean canRemoved = true;
 
 	public CacheValue(KEY key, Object value, long size) {
 		this.key = key;
@@ -54,5 +55,13 @@ abstract class CacheValue<KEY> implements CacheOverTimeInterface {
 	public Object cloneValue() {
 		return null;
 	};
+
+	public boolean canRemoved() {
+		return canRemoved;
+	}
+
+	public void setRemoved(boolean bool) {
+		canRemoved = bool;
+	}
 
 }

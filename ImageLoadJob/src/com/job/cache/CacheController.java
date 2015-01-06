@@ -1,59 +1,52 @@
 package com.job.cache;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Set;
+import java.util.LinkedList;
 import java.util.concurrent.locks.ReentrantLock;
-
-import android.os.Looper;
 
 abstract class CacheController<K, V extends CacheValue<K>> implements CacheInterface<K> {
 	private final HashMap<K, V> mCacheMap = new HashMap<K, V>();
+	private final LinkedList<V> mLinkedList = new LinkedList<V>();
 	private final ReentrantLock mLock = new ReentrantLock();
-	public final static long DEFAULT_MAX_CACHE_TIME;
 	public final static long DEFAULT_MAX_CACHE_SIZE;
 	static {
-		// 一分钟
-		DEFAULT_MAX_CACHE_TIME = 1 * 60 * 1000;
 		long M = Runtime.getRuntime().maxMemory() >> 20;
 		M = M > 150 ? 150 : M;
 		DEFAULT_MAX_CACHE_SIZE = M / 6 << 20;
 	}
 	private long mCachedSize = 0;
-	private long mMaxCacheTime = 0;
 	private long mMaxCacheSize = 0;
-	private boolean isRecyling = false;
 
 	public CacheController() {
 		mCachedSize = 0;
 		mMaxCacheSize = DEFAULT_MAX_CACHE_SIZE;
-		mMaxCacheTime = DEFAULT_MAX_CACHE_TIME;
 	}
 
-	@Override
-	public boolean put(K key, Object obj) {
+	public boolean put(K key, Object obj, boolean canRemoved) {
+		if (obj == null) return false;
 		mLock.lock();
-		CacheValue<K> value = mCacheMap.get(key);
+		V value = mCacheMap.get(key);
 		if (value != null && value.value() != null) {
 			value.updateCacheTime();
+			value.setRemoved(canRemoved);
+			mLinkedList.remove(value);
 			mLock.unlock();
 			return true;
 		}
 		V cv = createCacheValue(key, obj);
 		mCachedSize += cv.size();
-		releaseOverTimeOrOverSize();
 		mCacheMap.put(key, cv);
 		mLock.unlock();
 		return false;
 	}
 
 	@Override
+	public boolean put(K key, Object obj) {
+		return put(key, obj, true);
+	}
+
+	@Override
 	public Object opt(K uriKey) {
-		if (!checkAllowOptCache()) {
-			return null;
-		}
 		mLock.lock();
 		V value = mCacheMap.get(uriKey);
 		if (value != null) {
@@ -61,11 +54,10 @@ abstract class CacheController<K, V extends CacheValue<K>> implements CacheInter
 				value.updateCacheTime();
 				Object data = value.cloneValue();
 				mLock.unlock();
-				if (data != null) {
-					return data;
-				}
+				if (data != null) return data;
 				return value.value();
 			}
+			mLinkedList.remove(value);
 			mCachedSize -= value.size();
 			mCacheMap.remove(uriKey);
 		}
@@ -74,77 +66,32 @@ abstract class CacheController<K, V extends CacheValue<K>> implements CacheInter
 	}
 
 	/**
-	 * 主线程内且正在被回收时,不允许获取缓存,提升主线程的速度
-	 * 
-	 * @return true 是允许,否则不允许
-	 */
-	public final boolean checkAllowOptCache() {
-		return !(Looper.myLooper() == Looper.getMainLooper() && isRecyling);
-	}
-
-	public void releaseOverTimeOrOverSize() {
-		try {
-			mLock.lock();
-			isRecyling = true;
-			recyleOverTime();
-			recyleOverSizeBorder();
-			isRecyling = false;
-			mLock.unlock();
-		} finally {
-			// TODO:
-			System.gc();
-		}
-	}
-
-	/**
-	 * 释放超时的数据
-	 */
-
-	public boolean recyleOverTime() {
-		Set<K> sets = mCacheMap.keySet();
-		ArrayList<K> l = new ArrayList<K>();
-		for (K key : sets) {
-			V v = mCacheMap.get(key);
-			if (v.isOverTime(mMaxCacheTime)) {
-				mCachedSize -= v.size();
-				v.recyle();
-				l.add(key);
-			}
-		}
-		for (K key : l) {
-			mCacheMap.remove(key);
-		}
-		return false;
-	}
-
-	/**
 	 * 释放最大缓存的数据
 	 */
 
 	public boolean recyleOverSizeBorder() {
-		if (mCachedSize > mMaxCacheSize) {
-			ArrayList<V> l = new ArrayList<V>(mCacheMap.values());
-			try {
-				Collections.sort(l, sComparator);
-			} catch (Exception e) {
+		if (mCachedSize < mMaxCacheSize) return false;
+		LinkedList<V> noRemoved = new LinkedList<V>();
+		int remain = remainCacheSize();
+		while (!mLinkedList.isEmpty() && mCachedSize > remain) {
+			V entry = mLinkedList.removeLast();
+			if (!entry.canRemoved()) {
+				noRemoved.addLast(entry);
+				continue;
 			}
-
-			while (mCachedSize > mMaxCacheSize && !l.isEmpty()) {
-				V value = l.remove(0);
-				mCachedSize -= value.size();
-				mCacheMap.remove(value.key());
-				value.recyle();
-			}
-			l.clear();
+			mCachedSize -= entry.size();
+			mCacheMap.remove(entry.key());
+			entry.recyle();
 		}
-		return false;
+		while (!noRemoved.isEmpty()) {
+			mLinkedList.addFirst(noRemoved.removeFirst());
+		}
+		System.gc();
+		return true;
 	}
 
-	public void recyleAllCache() {
-		mLock.lock();
-		isRecyling = true;
-		isRecyling = false;
-		mLock.unlock();
+	private int remainCacheSize() {
+		return (int) (mMaxCacheSize * 0.8);
 	}
 
 	public long getMaxCacheSize() {
@@ -154,35 +101,10 @@ abstract class CacheController<K, V extends CacheValue<K>> implements CacheInter
 	public void setMaxMemorySize(long mms) {
 		mLock.lock();
 		this.mMaxCacheSize = mms;
-		releaseOverTimeOrOverSize();
+		recyleOverSizeBorder();
 		mLock.unlock();
-	}
-
-	public long getMaxCacheTime() {
-		return mMaxCacheTime;
-	}
-
-	public void setMaxCacheTime(long mmt) {
-		mLock.lock();
-		this.mMaxCacheTime = mmt;
-		releaseOverTimeOrOverSize();
-		mLock.unlock();
-	}
-
-	public boolean isRecyling() {
-		return isRecyling;
 	}
 
 	public abstract V createCacheValue(K key, Object value);
 
-	@SuppressWarnings("rawtypes")
-	public static Comparator<CacheValue> sComparator = new Comparator<CacheValue>() {
-		@Override
-		public int compare(CacheValue lhs, CacheValue rhs) {
-			if (lhs.size() > rhs.size()) {
-				return -1;
-			}
-			return 1;
-		}
-	};
 }

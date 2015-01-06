@@ -31,6 +31,10 @@ public abstract class JobDetail<PRO, RESULT> implements Runnable, IJobGroup {
 		result(work());
 	}
 
+	public final void save(boolean success) {
+		JobScheduler.sendNewRequirement(JobScheduler.MESSAGE_CACHE, new JobResult<Boolean>(success, this));
+	}
+
 	public final void update(PRO update) {
 		JobScheduler.sendNewRequirement(JobScheduler.MESSAGE_UPDATE, new JobResult<PRO>(update, this));
 	}
@@ -53,6 +57,9 @@ public abstract class JobDetail<PRO, RESULT> implements Runnable, IJobGroup {
 
 	public void onUpdate(PRO update) {
 	}
+
+	public void onTranslateToSdcard(boolean success) {
+	};
 
 	public void onResult(RESULT result) {
 		mScheduleState = SC_DEAD;

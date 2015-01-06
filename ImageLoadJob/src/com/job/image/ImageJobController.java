@@ -1,6 +1,10 @@
 package com.job.image;
 
+import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.util.Log;
+import android.view.View;
 
 import com.job.cache.CacheBitmapController;
 import com.job.syn.JobDetail;
@@ -25,30 +29,46 @@ public class ImageJobController {
 	 * @return
 	 */
 
-	@SuppressWarnings("rawtypes")
-	public static void load(String absolutePath, ImageJob tcm) {
+	@SuppressWarnings({ "rawtypes", "deprecation" })
+	public static void load(String absolutePath, ImageJob imageJob) {
 		JobUtils.checkIfInUIThread();
-		if (tcm != null) {
-			String uri = tcm.getUri();
-			Bitmap bmp = CacheBitmapController.singleInstance().opt(uri);
-			if (tcm.getView() != null && bmp != null) {
-				tcm.display(bmp);
+		if (imageJob == null) return;
+		String uri = imageJob.getUri();
+		Bitmap bmp = CacheBitmapController.singleInstance().opt(uri);
+		View view = imageJob.getView();
+		if (view != null) {
+			if (bmp != null) {
+				imageJob.display(bmp);
 				return;
 			}
-			JobDetail job = JobScheduler.getJobInGroup(ImageJobPool.JOB_GROUP, uri);
-			if (job != null) {
-				if (job instanceof ImageJobPool) {
-					ImageJobPool pool = (ImageJobPool) job;
-					if (pool.uri.equals(uri)) {
-						pool.addJob(tcm);
-						return;
+			String defKey = String.valueOf(imageJob.defSrc);
+			bmp = CacheBitmapController.singleInstance().opt(defKey);
+			if (bmp == null) {
+				Resources res = view.getResources();
+				if (res != null) {
+					try {
+						BitmapDrawable bd = (BitmapDrawable) res.getDrawable(imageJob.defSrc);
+						if (bd != null) bmp = bd.getBitmap();
+						if (bmp != null) CacheBitmapController.singleInstance().put(defKey, bmp, false);
+					} catch (OutOfMemoryError e) {
 					}
+
 				}
 			}
-			ImageJobPool container = new ImageJobPool(uri, absolutePath);
-			container.addJob(tcm);
-			JobScheduler.push(container);
+			imageJob.disPlayDefault(new BitmapDrawable(bmp));
 		}
-
+		JobDetail job = JobScheduler.getJobInGroup(ImageJobPool.JOB_GROUP, uri);
+		if (job != null) {
+			if (job instanceof ImageJobPool) {
+				ImageJobPool pool = (ImageJobPool) job;
+				if (pool.getUrl().equals(uri)) {
+					pool.addJob(imageJob);
+					return;
+				}
+			}
+		}
+		ImageJobPool container = new ImageJobPool(uri, absolutePath);
+		container.addJob(imageJob);
+		JobScheduler.push(container);
 	}
 }

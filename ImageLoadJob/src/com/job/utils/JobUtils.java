@@ -53,7 +53,8 @@ public class JobUtils {
 		if (file.exists()) {
 			if (file.isDirectory()) {
 				for (String p : file.list()) {
-					removeFileIfExsit(p);
+					boolean removed = removeFileIfExsit(p);
+					if (!removed) return false;
 				}
 			}
 			return file.delete();

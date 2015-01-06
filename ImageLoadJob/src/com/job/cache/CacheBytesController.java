@@ -15,7 +15,6 @@ public class CacheBytesController extends CacheController<String, BytesValue> {
 
 	public CacheBytesController() {
 		super();
-		setMaxCacheTime(DEFAULT_MAX_CACHE_TIME << 2);
 		setMaxMemorySize(DEFAULT_MAX_CACHE_SIZE >> 1);
 	}
 

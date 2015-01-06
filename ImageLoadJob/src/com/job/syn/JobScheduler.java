@@ -23,8 +23,10 @@ public final class JobScheduler {
 	static final int MESSAGE_START = 0;
 	// 更新
 	static final int MESSAGE_UPDATE = 1;
+	// 缓存到Sdcard
+	static final int MESSAGE_CACHE = 2;
 	// 结束
-	static final int MESSAGE_END = 2;
+	static final int MESSAGE_END = 3;
 
 	private static final String TAG = JobScheduler.class.getCanonicalName();
 	private final HashMap<String, JobDetail> mMap = new HashMap<String, JobDetail>();
@@ -75,6 +77,9 @@ public final class JobScheduler {
 				break;
 			case MESSAGE_UPDATE:
 				jResult.tccJob.onUpdate(jResult.data);
+				break;
+			case MESSAGE_CACHE:
+				jResult.tccJob.onTranslateToSdcard((Boolean) jResult.data);
 				break;
 			case MESSAGE_END:
 				jResult.tccJob.onResult(jResult.data);
@@ -128,8 +133,7 @@ public final class JobScheduler {
 
 	public static JobDetail getJobInGroup(String group, String key) {
 		JobScheduler tcd = sJobsMap.get(key);
-		if (tcd != null)
-			return tcd.mMap.get(key);
+		if (tcd != null) return tcd.mMap.get(key);
 		return null;
 	}
 
