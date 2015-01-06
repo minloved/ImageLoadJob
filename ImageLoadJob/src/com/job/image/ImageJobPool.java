@@ -7,7 +7,6 @@ import android.graphics.Bitmap;
 import android.util.Log;
 
 import com.job.cache.CacheBitmapController;
-import com.job.cache.CacheBytesController;
 import com.job.cache.CacheDisk;
 import com.job.image.ImageConfig.TargetConfig;
 import com.job.image.RemoteResourceToByteArray.OnRemoteProgressListener;
@@ -20,7 +19,6 @@ class ImageJobPool extends JobDetail<Integer, Bitmap> {
 	private static final String TAG = ImageJobPool.class.getSimpleName();
 	public static final String JOB_GROUP = "IMAGE_LOAD_JOB";
 
-	private static final CacheBytesController sMemoryCache = new CacheBytesController();
 	private final LinkedList<ImageJob> mTccJobs = new LinkedList<ImageJob>();
 	private final String cachePath;
 
@@ -71,18 +69,9 @@ class ImageJobPool extends JobDetail<Integer, Bitmap> {
 		save(saved);
 		// 如果文件不存在.而且从网络上读取失败的时候,查看是否有缓存
 		if (data == null) {
-			Log.i(TAG, "loadFromMemoryCache");
-			// 如果Bitmap缓存没有缓存该图片资源,则到字节缓存中去获取缓存的字节
-			data = sMemoryCache.opt(uri);
-			if (data == null) {
-				// 如果字节缓存内也没有获取到数据,就去Sdcard去获取
-				Log.i(TAG, "loadFromDiskCache");
-				data = CacheDisk.instance().opt(cachePath);
-				// 如果从Sdcard内读取缓存成功则缓存到字节缓存内
-				if (data != null) sMemoryCache.put(uri, data);
-			}
-		} else {
-			sMemoryCache.put(uri, data);
+			// 如果字节缓存内也没有获取到数据,就去Sdcard去获取
+			Log.i(TAG, "loadFromDiskCache");
+			data = CacheDisk.instance().opt(cachePath);
 		}
 		if (data == null) return null;
 		synchronized (sSynLock) {
