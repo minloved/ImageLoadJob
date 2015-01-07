@@ -12,7 +12,7 @@ abstract class CacheController<K, V extends CacheValue<K>> implements CacheInter
 	static {
 		long M = Runtime.getRuntime().maxMemory() >> 20;
 		M = M > 150 ? 120 : M;
-		DEFAULT_MAX_CACHE_SIZE = M / 6 << 20;
+		DEFAULT_MAX_CACHE_SIZE = M / 5 << 20;
 	}
 	private long mCachedSize = 0;
 	private long mMaxCacheSize = 0;

@@ -72,10 +72,7 @@ public class ImageUtils {
 
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
 	public static long computeBitmapSize(Bitmap bitmap) {
-		if (bitmap == null) {
-			return 0;
-		}
-
+		if (bitmap == null) return 0;
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
 			return bitmap.getByteCount();
 		}

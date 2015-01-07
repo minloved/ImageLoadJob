@@ -7,7 +7,6 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.view.View;
-import android.view.View.OnAttachStateChangeListener;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 
@@ -56,13 +55,6 @@ public class ImageJob {
 	 *            将加载完成的Bitmap 绑定到 该view上 显示
 	 * @return
 	 */
-	public static ImageJob obtainJob(String imageUrl, View view, ITCCDisplayer displayer, int defSrc) {
-		return obtainJob(imageUrl, view, null, displayer, defSrc, -1, null);
-	};
-
-	public static ImageJob obtainJob(String imageUrl, View view, ITCCDisplayer displayer, int defSrc, ImageConfig config) {
-		return obtainJob(imageUrl, view, null, displayer, defSrc, -1, config);
-	};
 
 	public static ImageJob obtainJob(String imageUrl, View view, View pView, ITCCDisplayer displayer, int defSrc, int defErr, ImageConfig config) {
 		if (displayer == null) displayer = DEFAULT;
@@ -96,9 +88,12 @@ public class ImageJob {
 	}
 
 	public final void update(View view, View pView, ITCCDisplayer displayer, int defSrc, int defErr, ImageConfig config) {
+		if (mConfig == null) config = new ImageConfig();
 		if (view != null) {
+			config.mTargetConfig = TargetConfig.BUILD_BITMAP_AND_CACHE;
 			mWeakView = new WeakReference<View>(view);
 		} else {
+			config.mTargetConfig = TargetConfig.ONLY_SAVE_TO_FILE;
 			mWeakView = null;
 		}
 		if (pView != null) {
@@ -109,13 +104,7 @@ public class ImageJob {
 		this.displayer = displayer;
 		this.defSrc = defSrc;
 		this.defErr = defErr;
-		if (config == null) {
-			mConfig = new ImageConfig();
-			mConfig.mTargetConfig = view == null ? TargetConfig.ONLY_BUILD_BITMAP : TargetConfig.BUILD_BITMAP_AND_CACHE;
-		} else {
-			mConfig = config;
-		}
-
+		mConfig = config;
 	}
 
 	public final boolean removeFromJobPool() {

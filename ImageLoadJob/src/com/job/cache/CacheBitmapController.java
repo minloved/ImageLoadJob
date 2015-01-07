@@ -24,7 +24,6 @@ public final class CacheBitmapController extends CacheController<String, BitmapV
 	// 设为最大内存的1/3
 	private CacheBitmapController() {
 		super();
-		setMaxMemorySize(DEFAULT_MAX_CACHE_SIZE * 6 / 5);
 	}
 
 	@Override

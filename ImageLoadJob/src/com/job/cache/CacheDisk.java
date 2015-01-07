@@ -36,7 +36,7 @@ public class CacheDisk implements CacheInterface<String> {
 	 * 将会对cache强制转换为byte[]
 	 */
 	@Override
-	public boolean put(String path, Object cache) {
+	public synchronized boolean put(String path, Object cache) {
 		if (!JobUtils.removeFileIfExsit(path) && !(cache instanceof byte[])) {
 			return false;
 		}
@@ -66,7 +66,7 @@ public class CacheDisk implements CacheInterface<String> {
 	}
 
 	@Override
-	public byte[] opt(String path) {
+	public synchronized byte[] opt(String path) {
 		if (null == JobUtils.exsit(path)) {
 			return null;
 		}

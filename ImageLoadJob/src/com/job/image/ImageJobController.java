@@ -21,6 +21,8 @@ import com.job.utils.JobUtils;
  */
 public class ImageJobController {
 
+	private static final String TAG = ImageJobController.class.getSimpleName();
+
 	/**
 	 * 将tcm的下载文件保存为absolutePat
 	 * 
@@ -38,6 +40,7 @@ public class ImageJobController {
 		View view = imageJob.getView();
 		if (view != null) {
 			if (bmp != null) {
+				Log.i(TAG, "loadFromMemery");
 				imageJob.display(bmp);
 				return;
 			}

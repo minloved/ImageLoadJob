@@ -100,7 +100,7 @@ public final class JobScheduler {
 	private static HashMap<String, JobScheduler> sJobsMap = new HashMap<String, JobScheduler>();
 	private static HashMap<String, Integer> sThreadMap = new HashMap<String, Integer>();
 	private static final int DEAFAULT_THREAD_MAX_COUNT = 7;
-	private static final int DEFAULT_THREAD_COUNT = 3;
+	private static final int DEFAULT_THREAD_COUNT = 5;
 
 	public static boolean setThreadCount(String group, int count) {
 		JobScheduler tcd = sJobsMap.get(group);
