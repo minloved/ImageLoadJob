@@ -88,7 +88,7 @@ public class ImageJob {
 	}
 
 	public final void update(View view, View pView, ITCCDisplayer displayer, int defSrc, int defErr, ImageConfig config) {
-		if (mConfig == null) config = new ImageConfig();
+		if (config == null) config = new ImageConfig();
 		if (view != null) {
 			config.mTargetConfig = TargetConfig.BUILD_BITMAP_AND_CACHE;
 			mWeakView = new WeakReference<View>(view);
