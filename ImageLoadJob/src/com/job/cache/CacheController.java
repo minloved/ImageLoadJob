@@ -35,6 +35,7 @@ abstract class CacheController<K, V extends CacheValue<K>> implements CacheInter
 			return true;
 		}
 		value = createCacheValue(key, obj);
+		value.setRemoved(canRemoved);
 		mCachedSize += value.size();
 		mCacheMap.put(key, value);
 		mLinkedList.addFirst(value);
