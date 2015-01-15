@@ -1,8 +1,10 @@
 package com.job.image;
 
+import android.annotation.SuppressLint;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.View;
 
@@ -31,7 +33,7 @@ public class ImageJobController {
 	 * @return
 	 */
 
-	@SuppressWarnings({ "rawtypes", "deprecation" })
+	@SuppressWarnings("rawtypes")
 	public static void load(String absolutePath, ImageJob imageJob) {
 		JobUtils.checkIfInUIThread();
 		if (imageJob == null) return;
@@ -46,19 +48,24 @@ public class ImageJobController {
 			}
 			String defKey = String.valueOf(imageJob.defSrc);
 			bmp = CacheBitmapController.singleInstance().opt(defKey);
-			if (bmp == null) {
-				Resources res = view.getResources();
-				if (res != null) {
-					try {
-						BitmapDrawable bd = (BitmapDrawable) res.getDrawable(imageJob.defSrc);
-						if (bd != null) bmp = bd.getBitmap();
-						if (bmp != null) CacheBitmapController.singleInstance().put(defKey, bmp, false);
-					} catch (OutOfMemoryError e) {
-					}
-
+			Resources res = view.getResources();
+			if (bmp == null && res != null) {
+				Drawable d = null;
+				try {
+					d = res.getDrawable(imageJob.defSrc);
+				} catch (OutOfMemoryError e) {
 				}
+				if (d != null && d instanceof BitmapDrawable) {
+					BitmapDrawable bd = (BitmapDrawable) d;
+					bmp = bd.getBitmap();
+					if (bmp != null) CacheBitmapController.singleInstance().put(defKey, bmp, false);
+				} else {
+					imageJob.disPlayDefault(d);
+				}
+			} else {
+				imageJob.disPlayDefault(new BitmapDrawable(res, bmp));
 			}
-			imageJob.disPlayDefault(new BitmapDrawable(bmp));
+
 		}
 		JobDetail job = JobScheduler.getJobInGroup(ImageJobPool.JOB_GROUP, uri);
 		if (job != null) {

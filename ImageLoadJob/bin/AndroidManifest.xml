@@ -3,16 +3,14 @@
     android:versionCode="1"
     android:versionName="1.0" >
 
+    <uses-sdk android:minSdkVersion="8" />
+
     <!-- Octopus(张宇) -->
-    <uses-sdk>
-        android:minSdkVersion="8"
-        android:targetSdkVersion="19" />
-        <application
-            android:allowBackup="true"
-            android:icon="@drawable/ic_launcher"
-            android:label="@string/app_name"
-            android:theme="@style/AppTheme" >
-        </application>
-    </uses-sdk>
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme" >
+    </application>
 
 </manifest>
