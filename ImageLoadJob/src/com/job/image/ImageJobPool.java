@@ -56,6 +56,7 @@ class ImageJobPool extends JobDetail<Integer, Bitmap> {
 		// 确保缓存文件存在
 		boolean saved = true;
 		if (!file.exists() || !file.isFile()) {
+			saved = false;
 			// 如果资源没有下载,则主动将数据缓存到Sdcard内
 			Log.w(TAG, "loadFromWebServices");
 			data = RemoteResourceToByteArray.loadFromRemote(uri, new OnRemoteProgressListener() {
